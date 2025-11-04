@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MBTIワンコ診断（4問で16タイプ）</title>
+  <style>
+    :root{
+      --card-bg:#fff;
+      --accent:#ff9f43;
+      --muted:#666;
+      --max-width:820px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: "Noto Sans JP", "Hiragino Sans", "Segoe UI", Roboto, sans-serif;
+      background:#fcfbf8;
+      margin:0;
+      padding:28px;
+      color:#222;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    h1{margin:0 0 8px; font-size:1.6rem; text-align:center;}
+    .container{max-width:var(--max-width); margin:12px auto;}
+    .card{background:var(--card-bg); padding:18px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.06); margin-bottom:16px;}
+    label{display:block; margin:8px 0; cursor:pointer;}
+    input[type="text"]{padding:10px; width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #e6e6e6; font-size:14px;}
+    .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+    .btn{background:var(--accent); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;}
+    .btn.secondary{background:#888;}
+    .result-title{font-size:1.2rem; margin:6px 0;}
+    img.dog{
+      width:100%;
+      max-width:560px;
+      height:auto;
+      border-radius:14px;
+      display:block;
+      margin:18px auto;
+      box-shadow:0 12px 28px rgba(0,0,0,0.12);
+      object-fit:cover;
+    }
+    .muted{color:var(--muted);}
+    .share-row{display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap;}
+    .share-link{padding:10px 14px; color:#fff; text-decoration:none; border-radius:10px; display:inline-block; font-weight:700; font-size:14px;}
+    .share-x{background:#000;}
+    .share-copy{background:#16a34a;}
+    .share-download{background:#2563eb;}
+    #affinity-section{display:none; margin-top:12px;}
+    .center{text-align:center;}
+    @media(max-width:520px){
+      img.dog{max-width:360px;}
+      .btn{padding:10px 12px; font-size:14px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐾 MBTIワンコ診断（4問・16タイプ対応）</h1>
+
+    <div id="quiz" class="card" aria-live="polite">
+      <p><input id="user-name" type="text" placeholder="あなたの名前（任意）"></p>
+
+      <p><strong>Q1 — 外向か内向か？</strong></p>
+      <label><input type="radio" name="q1" value="E"> 外向（E） — 人といるとエネルギーがわく</label>
+      <label><input type="radio" name="q1" value="I"> 内向（I） — 一人でリフレッシュする方が好き</label>
+
+      <p><strong>Q2 — 感覚（S）か直観（N）？</strong></p>
+      <label><input type="radio" name="q2" value="S"> 感覚（S） — 現実や事実を重視する</label>
+      <label><input type="radio" name="q2" value="N"> 直観（N） — 全体や可能性を重視する</label>
+
+      <p><strong>Q3 — 思考（T）か感情（F）？</strong></p>
+      <label><input type="radio" name="q3" value="T"> 思考（T） — 論理・客観を優先する</label>
+      <label><input type="radio" name="q3" value="F"> 感情（F） — 共感や人間関係を優先する</label>
+
+      <p><strong>Q4 — 判断（J）か知覚（P）か？</strong></p>
+      <label><input type="radio" name="q4" value="J"> 判断（J） — 計画的で段取りが好き</label>
+      <label><input type="radio" name="q4" value="P"> 知覚（P） — 柔軟で流れに乗る方が好き</label>
+
+      <div class="center" style="margin-top:14px;">
+        <button class="btn" onclick="onDiagnose()">診断する 🐶</button>
+        <button class="btn secondary" onclick="onReset()">リセット</button>
+      </div>
+    </div>
+
+    <div id="result" class="card" style="display:none;">
+      <div id="result-header">
+        <div class="result-title" id="diagnosed-name"></div>
+        <div class="muted center">あなたのタイプコード：<strong id="my-type-code"></strong></div>
+      </div>
+
+      <img id="dog-img" class="dog" src="" alt="犬の画像" />
+
+      <div style="text-align:center; margin-top:8px;">
+        <div id="dog-catch" style="font-weight:800; font-size:1.05rem;"></div>
+        <p id="dog-detail" class="muted" style="margin-top:8px;"></p>
+      </div>
+
+      <div class="share-row" aria-hidden="false">
+        <a id="btn-share-x" class="share-link share-x" target="_blank" rel="noopener">Xでシェア</a>
+        <button id="btn-copy" class="share-link share-copy" onclick="copyResult()">結果をコピー</button>
+        <a id="btn-download-image" class="share-link share-download" href="#" download="mbti_dog_result.jpg">画像を開く／保存</a>
+      </div>
+
+      <div id="affinity-section">
+        <hr />
+        <h3 style="margin:8px 0;">🐾 相性診断</h3>
+        <p class="muted center">あなたのタイプ：<strong id="show-my-type-inline"></strong></p>
+        <p><input id="partner-code" type="text" placeholder="相手のMBTIコード（例：ENFP）" style="padding:10px; width:100%; box-sizing:border-box;"></p>
+        <div class="center">
+          <button class="btn" onclick="checkAffinity()">相性を診断する</button>
+        </div>
+        <p id="affinity-result" style="margin-top:10px; text-align:center; font-weight:700;"></p>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* 全16タイプのデータ（犬種名・キャッチ・詳細・相性配列・画像URL） */
+const DOG_TYPES = {
+  "ISTJ": { name:"ドーベルマン", catch:"規律を重んじる論理的な守護犬", detail:"揺るぎない忠誠心と現実的な判断力で守るタイプ。", affinity:["ENFP","ISFP","ESTP"], conflict:["INFP","ENFJ"], img:"https://cdn.pixabay.com/photo/2018/02/21/12/12/doberman-3166123_1280.jpg" },
+  "ISFJ": { name:"キャバリア", catch:"群れの調和を守る献身の癒し手", detail:"細やかな気配りと安定感で周囲を支える存在。", affinity:["ESFP","ISTP","ISFJ"], conflict:["ENTP","INTJ"], img:"https://cdn.pixabay.com/photo/2017/06/07/18/53/cavalier-2381532_1280.jpg" },
+  "INFJ": { name:"柴犬", catch:"静かな洞察力を持つ魂の参謀", detail:"深い共感と強い信念で人を導く理想主義者。", affinity:["ENFP","ENTP","INFJ"], conflict:["ESTJ","ESTP"], img:"https://cdn.pixabay.com/photo/2017/12/29/18/14/shiba-inu-3043594_1280.jpg" },
+  "INTJ": { name:"ロットワイラー", catch:"合理性を追求する孤高の戦略家", detail:"計画と理論で未来を切り拓く冷静な策士。", affinity:["ENFJ","ENTP","INFP"], conflict:["ESFP","ESTP"], img:"https://cdn.pixabay.com/photo/2016/02/19/10/00/rottweiler-1209620_1280.jpg" },
+
+  "ISTP": { name:"ジャック・ラッセル・テリア", catch:"瞬発力と好奇心の独立者", detail:"五感で世界を探り即応する自由の冒険者。", affinity:["ESFJ","ISTP","ENTP"], conflict:["ENFJ","INFJ"], img:"https://cdn.pixabay.com/photo/2016/02/19/10/00/jack-russell-1209622_1280.jpg" },
+  "ISFP": { name:"パグ", catch:"マイペースな芸術家、五感の表現者", detail:"感性を大切にし自分の世界を愛するタイプ。", affinity:["ESTJ","ENTJ","ISFP"], conflict:["ENFJ","INFJ"], img:"https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785075_1280.jpg" },
+  "INFP": { name:"チワワ", catch:"静かに世界を想う理想の詩人", detail:"繊細で深い内面を持つロマンチスト。", affinity:["ENFJ","ENTP","INFP"], conflict:["ESTJ","ESTP"], img:"https://cdn.pixabay.com/photo/2016/02/22/17/55/chihuahua-1210558_1280.jpg" },
+  "INTP": { name:"アフガン・ハウンド", catch:"知識の探求者、論理の芸術家", detail:"理論に耽り問題の本質を探る思索家。", affinity:["ESFJ","ENTP","INTP"], conflict:["ESTJ","ESFP"], img:"https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785076_1280.jpg" },
+
+  "ESTP": { name:"ボクサー", catch:"場を変える行動派パフォーマー", detail:"行動力と即断で盛り上げる現場主義者。", affinity:["ISTJ","ISFP","ESFP"], conflict:["INFP","INTJ"], img:"https://cdn.pixabay.com/photo/2016/02/22/17/55/boxer-1210559_1280.jpg" },
+  "ESFP": { name:"ダルメシアン", catch:"注目を集めるエネルギッシュなスター", detail:"人を惹き付ける明るさと瞬発力のパフォーマー。", affinity:["ISTP","ISFJ","ESTP"], conflict:["INTJ","ENTJ"], img:"https://cdn.pixabay.com/photo/2016/02/19/10/00/dalmatian-1209621_1280.jpg" },
+  "ENFP": { name:"ゴールデン・レトリバー", catch:"無限の愛を配る太陽の犬", detail:"好奇心旺盛で人を元気にするムードメーカー。", affinity:["ISTJ","INFJ","ENTJ"], conflict:["ISTP","ESTP"], img:"https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785074_1280.jpg" },
+  "ENTP": { name:"プードル", catch:"議論を楽しむ知的な変革者", detail:"新しい視点で問題を楽しみながら解く遊戯者。", affinity:["ISTJ","INFJ","ENFP"], conflict:["ISFJ","ESFJ"], img:"https://cdn.pixabay.com/photo/2017/02/20/18/03/poodle-2089391_1280.jpg" },
+
+  "ESTJ": { name:"ジャーマン・シェパード", catch:"生まれながらのリーダー、統率の犬", detail:"現実的判断で集団をまとめあげる実務家。", affinity:["ISFP","INFP","ESTJ"], conflict:["INFJ","ENTP"], img:"https://cdn.pixabay.com/photo/2017/07/31/11/22/german-shepherd-2559369_1280.jpg" },
+  "ESFJ": { name:"マルチーズ", catch:"社交的な女王、愛情表現の達人", detail:"周囲を気遣い誰とでも仲良くなる社交家。", affinity:["ISTP","INTP","ESFP"], conflict:["ENTP","INTJ"], img:"https://cdn.pixabay.com/photo/2017/09/25/13/12/dog-2785072_1280.jpg" },
+  "ENFJ": { name:"ラブラドール・レトリバー", catch:"群れを導く究極の調和主義者", detail:"感情を読み取りながら人をまとめる天性の指導者。", affinity:["INFP","INTJ","ENFJ"], conflict:["ISTP","ESTP"], img:"https://cdn.pixabay.com/photo/2018/03/16/17/27/labrador-retriever-3231587_1280.jpg" },
+  "ENTJ": { name:"ワイマラナー", catch:"目標達成の鬼、圧倒的推進力", detail:"強い意志で組織を動かし成果を出す指揮官。", affinity:["INFP","INTJ","ENTJ"], conflict:["ISFP","ESFP"], img:"https://cdn.pixabay.com/photo/2018/03/29/17/20/weimaraner-3279448_1280.jpg" }
+};
+
+/* MBTIコード作成（Q1: E/I, Q2: S/N, Q3: T/F, Q4: J/P） */
+function determineCode4() {
+  const q1 = document.querySelector('input[name="q1"]:checked');
+  const q2 = document.querySelector('input[name="q2"]:checked');
+  const q3 = document.querySelector('input[name="q3"]:checked');
+  const q4 = document.querySelector('input[name="q4"]:checked');
+  if (!q1 || !q2 || !q3 || !q4) {
+    alert("すべての質問に回答してください。");
+    return null;
+  }
+  return q1.value + q2.value + q3.value + q4.value;
+}
+
+/* 診断処理 */
+function onDiagnose(){
+  const code = determineCode4();
+  if (!code) return;
+
+  const type = DOG_TYPES[code];
+  if (!type) {
+    alert("診断タイプが未登録です（開発中のタイプ）。結果コード: " + code);
+    return;
+  }
+
+  const nameInput = document.getElementById("user-name").value.trim();
+  const displayName = nameInput ? nameInput : "あなた";
+
+  document.getElementById("diagnosed-name").textContent = `${displayName}さんの魂の犬種は【${type.name}】`;
+  document.getElementById("my-type-code").textContent = code;
+  document.getElementById("show-my-type-inline").textContent = code;
+  document.getElementById("dog-img").src = type.img;
+  document.getElementById("dog-img").alt = type.name;
+  document.getElementById("dog-catch").textContent = type.catch;
+  document.getElementById("dog-detail").textContent = type.detail;
+
+  document.getElementById("quiz").style.display = "none";
+  document.getElementById("result").style.display = "block";
+  document.getElementById("affinity-section").style.display = "block";
+
+  localStorage.setItem("myDogType", code);
+
+  const shareText = encodeURIComponent(`${displayName}さんの犬タイプは【${type.name}】（${code}） 🐶✨`);
+  const shareUrl = encodeURIComponent(location.href);
+  document.getElementById("btn-share-x").href = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+
+  const dl = document.getElementById("btn-download-image");
+  dl.href = type.img;
+  dl.download = `${code}_${type.name.replace(/\s+/g,'_')}.jpg`;
+}
+
+/* 相性診断 */
+function checkAffinity(){
+  const myCode = localStorage.getItem("myDogType") || document.getElementById("my-type-code").textContent;
+  const partner = (document.getElementById("partner-code").value || "").trim().toUpperCase();
+  const out = document.getElementById("affinity-result");
+
+  if (!myCode) { out.textContent = "まず診断を実行してください。"; return; }
+  if (!partner) { out.textContent = "相手のMBTIコードを入力してください（例：ENFP）"; return; }
+  if (!DOG_TYPES[partner]) { out.textContent = "そのMBTIコードは未登録です。正しい4文字コードを入力してください。"; return; }
+  const myType = DOG_TYPES[myCode];
+  const pType = DOG_TYPES[partner];
+
+  let msg = "";
+  if (myCode === partner) {
+    msg = "💚 共鳴する盟友！同じタイプどうし、深い理解があります。";
+  } else if (myType.affinity && myType.affinity.includes(partner)) {
+    msg = "💖 相性抜群！補い合って良い化学反応が起きます。";
+  } else if (myType.conflict && myType.conflict.includes(partner)) {
+    msg = "⚡️ 衝突しやすい組み合わせ。価値観の違いに注意が必要です。";
+  } else {
+    msg = "🔷 安定した関係。お互いに学び合える良好な関係です。";
+  }
+  out.innerHTML = `<strong>${myType.name}（${myCode}）</strong> と <strong>${pType.name}（${partner}）</strong> の相性：<br>${msg}`;
+}
+
+/* 結果テキストをコピー */
+function copyResult(){
+  const name = document.getElementById("diagnosed-name").textContent || "";
+  const code = document.getElementById("my-type-code").textContent || "";
+  const detail = document.getElementById("dog-detail").textContent || "";
+  const text = `${name}\nタイプコード：${code}\n${detail}\n#MBTIワンコ診断`;
+  navigator.clipboard?.writeText(text).then(()=> {
+    alert("結果テキストをコピーしました。SNSに貼って使ってください！");
+  }).catch(()=> {
+    alert("コピーに失敗しました。手動でコピーしてください。");
+  });
+}
+
+/* リセット */
+function onReset(){
+  document.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);
+  document.getElementById("user-name").value = "";
+  document.getElementById("quiz").style.display = "block";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("affinity-section").style.display = "none";
+  document.getElementById("affinity-result").textContent = "";
+  localStorage.removeItem("myDogType");
+}
+
+/* ページ読み込み時に保存結果があれば復元 */
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("myDogType");
+  if (saved && DOG_TYPES[saved]) {
+    const code = saved;
+    const type = DOG_TYPES[code];
+    const displayName = "あなた";
+    document.getElementById("diagnosed-name").textContent = `${displayName}さんの魂の犬種は【${type.name}】`;
+    document.getElementById("my-type-code").textContent = code;
+    document.getElementById("show-my-type-inline").textContent = code;
+    document.getElementById("dog-img").src = type.img;
+    document.getElementById("dog-img").alt = type.name;
+    document.getElementById("dog-catch").textContent = type.catch;
+    document.getElementById("dog-detail").textContent = type.detail;
+    document.getElementById("quiz").style.display = "none";
+    document.getElementById("result").style.display = "block";
+    document.getElementById("affinity-section").style.display = "block";
+    const shareText = encodeURIComponent(`${displayName}さんの犬タイプは【${type.name}】（${code}） 🐶✨`);
+    document.getElementById("btn-share-x").href = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(location.href)}`;
+    const dl = document.getElementById("btn-download-image");
+    dl.href = type.img;
+    dl.download = `${code}_${type.name.replace(/\s+/g,'_')}.jpg`;
+  }
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
